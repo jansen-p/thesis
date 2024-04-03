@@ -1,0 +1,24 @@
+repos:
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: c22645f6b45188216151a407c040a9eec1795ab0 # v0.3.3
+      hooks:
+        - alias: ruff-format-check
+          id: ruff-format
+          args: [ --check ]
+          stages: ["manual"]
+          types_or: [ python, pyi, jupyter ]
+
+        - alias: ruff-check
+          id: ruff
+          stages: ["manual"]
+          types_or: [ python, pyi, jupyter ]
+
+        - alias: ruff-format
+          id: ruff-format
+          types_or: [ python, pyi, jupyter ]
+
+        - alias: ruff 
+          id: ruff
+          args: [ --fix, --exit-non-zero-on-fix ] # --unsafe-fixes can be used for some fixes i.e. F841
+          types_or: [ python, pyi, jupyter ]
+
