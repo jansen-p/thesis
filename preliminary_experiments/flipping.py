@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 
-import numpy as np
 import torch
 
 
@@ -17,11 +16,13 @@ class Flipper(ABC):
         """Perturbation of the input."""
         pass
 
-    def _flip_bits(self, value, bits: int):
+    def _flip_bits(self, value: torch.Tensor, bits: int):
         dtype = value.dtype
-        for bit_position in range(bits):
-            mask = np.random.binomial(n=1, p=self.probability, size=value.shape)
-            value ^= mask * (1 << bit_position)
+        mask = torch.bernoulli(
+            torch.full((bits, *list(value.shape)), self.probability)
+        ).to(device=value.device, dtype=dtype)
+        for bit_position in range(bits - 1):
+            value ^= mask[bit_position] * (1 << bit_position)
         return value.to(dtype=dtype)
 
 
@@ -58,10 +59,15 @@ class FloatFlipper(Flipper):
         """Perturbation of the input."""
         assert value.dtype in [torch.float16, torch.float32]
         bits = 32 if value.dtype == torch.float32 else 16
+        buf = value.clone()
 
-        value_int = value.view(getattr(torch, f"int{bits}"))
+        value_int = buf.view(getattr(torch, f"int{bits}"))
 
         new_value_int = self._flip_bits(value_int, bits)
 
-        value_modified = new_value_int.view(value.dtype)
+        # 31868 -> 0111 1100 0111 1100 -> reinterpret at float16 -> NaN
+        # sign: 0 exponent: 11111 mantissa 0001111100
+        # https://stackoverflow.com/questions/8341395/what-is-a-subnormal-floating-point-number/53203428#53203428
+
+        value_modified = new_value_int.view(buf.dtype)
         return value_modified

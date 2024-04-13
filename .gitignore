@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 
 .pre-commit
+preliminary_experiments/output
+preliminary_experiments/plots
